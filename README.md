@@ -84,6 +84,29 @@ Releases of this addon are [published to Maven Central](https://search.maven.org
 mvn install
 ```
 
+## Contezza Snapshot / Release Flow
+
+For the Contezza fork, artifacts can be deployed to `https://nexus.contezza.nl` via the Maven profile `contezza-deploy`.
+
+Prerequisites:
+
+- `~/.m2/settings.xml` contains credentials for server IDs `releases` and `snapshots`
+- Run commands from the repository root
+
+Snapshot deploy:
+
+```bash
+mvn -Pcontezza-deploy -DskipTests deploy
+```
+
+Release flow:
+
+```bash
+mvn -Pcontezza-deploy release:clean release:prepare release:perform -Darguments="-Pcontezza-deploy -DskipTests"
+```
+
+Note: use `-Prelease` only if you also want GPG signing.
+
 # Contributing
 
 We hope to have lots of collaborators on this project. As such, we have outlined our contribution policies and proceedures in the [CONTRIBUTING.md](./CONTRIBUTING.md) document.

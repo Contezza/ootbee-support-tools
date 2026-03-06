@@ -20,9 +20,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:OrderOfTheBee/ootbee-support-tools.git</connection>
-        <developerConnection>scm:git:git@github.com:OrderOfTheBee/ootbee-support-tools.git</developerConnection>
-        <url>git@github.com:OrderOfTheBee/ootbee-support-tools.git</url>
+        <connection>scm:git:git@github.com:Contezza/ootbee-support-tools.git</connection>
+        <developerConnection>scm:git:git@github.com:Contezza/ootbee-support-tools.git</developerConnection>
+        <url>git@github.com:Contezza/ootbee-support-tools.git</url>
     </scm>
 
     <developers>
@@ -588,6 +588,42 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.2</version>
+                    <configuration>
+                        <providerImplementations>
+                            <git>jgit</git>
+                        </providerImplementations>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-jgit</artifactId>
+                            <version>1.9.5</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-scm-plugin</artifactId>
+                    <version>1.9.5</version>
+                    <configuration>
+                        <providerImplementations>
+                            <git>jgit</git>
+                        </providerImplementations>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-jgit</artifactId>
+                            <version>1.9.5</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
                     <groupId>org.sonatype.central</groupId>
                     <artifactId>central-publishing-maven-plugin</artifactId>
                     <version>${maven.sonatype.version}</version>
@@ -725,6 +761,33 @@
                     </dependency>
                 </dependencies>
             </dependencyManagement>
+        </profile>
+        <profile>
+            <id>contezza-deploy</id>
+            <properties>
+                <maven.deploy.skip>false</maven.deploy.skip>
+                <skipPublishing>true</skipPublishing>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <extensions>false</extensions>
+                    </plugin>
+                </plugins>
+            </build>
+            <distributionManagement>
+                <repository>
+                    <id>releases</id>
+                    <url>https://nexus.contezza.nl/repository/releases/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>snapshots</id>
+                    <url>https://nexus.contezza.nl/repository/snapshots/</url>
+                    <uniqueVersion>false</uniqueVersion>
+                </snapshotRepository>
+            </distributionManagement>
         </profile>
     </profiles>
 </project>
