@@ -34,7 +34,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -47,6 +49,8 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * This log4j helper implementation handles log4j version 1 compatibility for Alfresco Content Services up to 7.3
@@ -55,6 +59,14 @@ import org.apache.log4j.Logger;
  */
 public class Log4j1HelperImpl implements Log4jHelper
 {
+
+    private static final String INCLUDE_TOMCAT_ACCESS_LOGS_PROPERTY = "ootbee-support-tools.log-file.includeTomcatAccessLogs";
+
+    private static final String CATALINA_BASE_SYSTEM_PROPERTY = "catalina.base";
+
+    private static final String CATALINA_HOME_SYSTEM_PROPERTY = "catalina.home";
+
+    private static final String ACCESS_LOG_FILE_NAME_FRAGMENT = "access_log";
 
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Log4j1HelperImpl.class);
 
@@ -251,6 +263,15 @@ public class Log4j1HelperImpl implements Log4jHelper
             }
         }
 
+        paths.stream().filter(s -> !procesedPaths.contains(s)).forEach(s -> {
+            final Path path = Paths.get(s);
+            if (this.isTomcatAccessLogPath(path))
+            {
+                resolvedPathConsumer.accept(path);
+                procesedPaths.add(s);
+            }
+        });
+
         paths.stream().filter(s -> !procesedPaths.contains(s)).forEach(invalidPathConsumer);
     }
 
@@ -314,6 +335,8 @@ public class Log4j1HelperImpl implements Log4jHelper
                 }
             }
         }
+
+        this.collectTomcatAccessLogPaths(paths);
 
         final List<Path> sortedPaths = new ArrayList<>(paths);
         Collections.sort(sortedPaths);
@@ -408,5 +431,83 @@ public class Log4j1HelperImpl implements Log4jHelper
         }
 
         return info;
+    }
+
+    private void collectTomcatAccessLogPaths(final Set<Path> paths)
+    {
+        if (!this.isTomcatAccessLogsEnabled())
+        {
+            return;
+        }
+
+        final Optional<Path> tomcatLogPath = this.resolveTomcatLogPath();
+        if (tomcatLogPath.isPresent())
+        {
+            try (final DirectoryStream<Path> directoryStream = Files.newDirectoryStream(tomcatLogPath.get(), "*access_log*"))
+            {
+                directoryStream.forEach(path -> {
+                    if (Files.isRegularFile(path))
+                    {
+                        paths.add(path.toAbsolutePath().normalize());
+                    }
+                });
+            }
+            catch (final IOException ioex)
+            {
+                LOGGER.warn("Failed to collect Tomcat access log paths from {}", tomcatLogPath.get(), ioex);
+            }
+        }
+    }
+
+    private boolean isTomcatAccessLogPath(final Path path)
+    {
+        boolean isTomcatAccessLogPath = false;
+        if (this.isTomcatAccessLogsEnabled())
+        {
+            final Path normalizedPath = path.toAbsolutePath().normalize();
+            final Optional<Path> tomcatLogPath = this.resolveTomcatLogPath();
+            isTomcatAccessLogPath = tomcatLogPath.isPresent() && normalizedPath.startsWith(tomcatLogPath.get())
+                    && normalizedPath.getFileName() != null
+                    && normalizedPath.getFileName().toString().toLowerCase(Locale.ROOT).contains(ACCESS_LOG_FILE_NAME_FRAGMENT);
+        }
+
+        return isTomcatAccessLogPath;
+    }
+
+    private Optional<Path> resolveTomcatLogPath()
+    {
+        String catalinaBase = System.getProperty(CATALINA_BASE_SYSTEM_PROPERTY);
+        if (catalinaBase == null || catalinaBase.trim().isEmpty())
+        {
+            catalinaBase = System.getProperty(CATALINA_HOME_SYSTEM_PROPERTY);
+        }
+
+        Optional<Path> tomcatLogPath = Optional.empty();
+        if (catalinaBase != null && !catalinaBase.trim().isEmpty())
+        {
+            final Path resolvedPath = Paths.get(catalinaBase).toAbsolutePath().normalize().resolve("logs").normalize();
+            if (Files.isDirectory(resolvedPath))
+            {
+                tomcatLogPath = Optional.of(resolvedPath);
+            }
+        }
+
+        return tomcatLogPath;
+    }
+
+    private boolean isTomcatAccessLogsEnabled()
+    {
+        boolean enabled = false;
+        final WebApplicationContext context = ContextLoader.getCurrentWebApplicationContext();
+        if (context != null && context.containsBean("global-properties"))
+        {
+            final Properties globalProperties = context.getBean("global-properties", Properties.class);
+            enabled = Boolean.parseBoolean(globalProperties.getProperty(INCLUDE_TOMCAT_ACCESS_LOGS_PROPERTY, "false"));
+        }
+        else
+        {
+            enabled = Boolean.getBoolean(INCLUDE_TOMCAT_ACCESS_LOGS_PROPERTY);
+        }
+        return enabled;
     }
 }
