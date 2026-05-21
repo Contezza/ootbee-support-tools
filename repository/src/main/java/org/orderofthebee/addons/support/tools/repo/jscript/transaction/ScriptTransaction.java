@@ -31,7 +31,8 @@
  */
 package org.orderofthebee.addons.support.tools.repo.jscript.transaction;
 
-import javax.transaction.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * deals with the de.jgoldhammer.alfresco.jscript.transaction object.
@@ -41,58 +42,63 @@ import javax.transaction.*;
  */
 public class ScriptTransaction {
 
-	private UserTransaction userTransaction;
+	private final Object userTransaction;
 
-	public ScriptTransaction(UserTransaction userTransaction) {
+	public ScriptTransaction(Object userTransaction) {
 		this.userTransaction = userTransaction;
 	}
 
 	/**
 	 * begin a new user transaction
 	 *
-	 * @throws NotSupportedException
-	 * @throws SystemException
+	 * @throws Exception if beginning the transaction fails.
 	 */
-	public void begin() throws NotSupportedException, SystemException {
-		userTransaction.begin();
+	public void begin() throws Exception {
+		invoke("begin");
 	}
 
 	/**
 	 * commit a usertransaction
 	 *
-	 * @throws SecurityException if transaction commit fails.
-	 * @throws IllegalStateException if transaction commit fails.
-	 * @throws RollbackException if transaction commit fails.
-	 * @throws HeuristicMixedException if transaction commit fails.
-	 * @throws HeuristicRollbackException if transaction commit fails.
-	 * @throws SystemException if transaction commit fails.
+	 * @throws Exception if transaction commit fails.
 	 */
-	public void commit() throws SecurityException, IllegalStateException, RollbackException, HeuristicMixedException,
-			HeuristicRollbackException, SystemException {
-			userTransaction.commit();
+	public void commit() throws Exception {
+		invoke("commit");
 	}
 
 	/**
 	 * rollback of an transaction
 	 *
-	 * @throws SecurityException if transaction commit fails.
-	 * @throws IllegalStateException if transaction commit fails.
-	 * @throws RollbackException if transaction commit fails.
-	 * @throws HeuristicMixedException if transaction commit fails.
-	 * @throws HeuristicRollbackException if transaction commit fails.
-	 * @throws SystemException if transaction commit fails.
+	 * @throws Exception if transaction rollback fails.
 	 */
-	public void rollback() throws SecurityException, IllegalStateException, RollbackException, HeuristicMixedException, HeuristicRollbackException, SystemException {
-			userTransaction.rollback();
+	public void rollback() throws Exception {
+		invoke("rollback");
 	}
 
 	/**
-	 * @return status value (see javax/transaction/Status.class)
-	 * @throws SystemException if getting the status failed.
+	 * @return transaction status value
+	 * @throws Exception if getting the status failed.
 	 */
-	public int getStatus() throws SystemException{
-		return userTransaction.getStatus();
+	public int getStatus() throws Exception{
+		return ((Integer) invoke("getStatus")).intValue();
 	}
 	
+	private Object invoke(String methodName) throws Exception {
+		try {
+			Method method = userTransaction.getClass().getMethod(methodName);
+			return method.invoke(userTransaction);
+		} catch (InvocationTargetException ex) {
+			Throwable cause = ex.getCause();
+			if (cause instanceof Exception) {
+				throw (Exception) cause;
+			}
+			if (cause instanceof Error) {
+				throw (Error) cause;
+			}
+			throw new IllegalStateException(cause);
+		} catch (ReflectiveOperationException ex) {
+			throw new IllegalStateException("Unable to call transaction method " + methodName, ex);
+		}
+	}
 	
 }

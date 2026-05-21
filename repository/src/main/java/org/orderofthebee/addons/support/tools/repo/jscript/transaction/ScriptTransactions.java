@@ -31,8 +31,10 @@
  */
 package org.orderofthebee.addons.support.tools.repo.jscript.transaction;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.alfresco.repo.processor.BaseProcessorExtension;
-import org.alfresco.service.transaction.TransactionService;
 import org.springframework.extensions.webscripts.annotation.ScriptClass;
 import org.springframework.extensions.webscripts.annotation.ScriptClassType;
 import org.springframework.extensions.webscripts.annotation.ScriptMethod;
@@ -47,9 +49,9 @@ import org.springframework.extensions.webscripts.annotation.ScriptMethodType;
 @ScriptClass(types=ScriptClassType.JavaScriptRootObject, code= "transaction", help="the root object for the transactionservice")
 public class ScriptTransactions extends BaseProcessorExtension {
 
-	private TransactionService transactionService;
+	private Object transactionService;
 
-    public void setTransactionService(TransactionService transactionService) {
+    public void setTransactionService(Object transactionService) {
 		this.transactionService = transactionService;
 	}
 
@@ -59,13 +61,30 @@ public class ScriptTransactions extends BaseProcessorExtension {
     		code="de.jgoldhammer.alfresco.jscript.transaction.getUserTransaction()",
     		type=ScriptMethodType.WRITE)
     public ScriptTransaction getUserTransaction(){
-    	return new ScriptTransaction(transactionService.getUserTransaction());
+    	return new ScriptTransaction(invoke("getUserTransaction"));
     }
     
     public boolean isReadOnly(){
-    	return !transactionService.getAllowWrite();
+    	return !((Boolean) invoke("getAllowWrite")).booleanValue();
     }
 
+    private Object invoke(String methodName) {
+        try {
+            Method method = transactionService.getClass().getMethod(methodName);
+            return method.invoke(transactionService);
+        } catch (InvocationTargetException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new IllegalStateException(cause);
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException("Unable to call transaction service method " + methodName, ex);
+        }
+    }
     
     
 }
