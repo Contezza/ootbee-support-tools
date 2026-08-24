@@ -65,6 +65,7 @@
         "preferenceService" : false,
         "taggingService" : false,
         
-        "Admin" : false
+        "Admin" : false,
+        "batchExecuter" : false
     }
 }

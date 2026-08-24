@@ -37,6 +37,7 @@ import org.apache.commons.logging.Log;
 import org.mozilla.javascript.*;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Container class for all worker implementations used by
@@ -58,6 +59,11 @@ public class Workers
          * @return true if this worker was not canceled before.
          */
         boolean cancel();
+
+        /**
+         * Returns the number of entries processed so far by this worker.
+         */
+        int getProcessedCount();
     }
 
     private abstract static class BaseProcessWorker<T> extends BatchProcessor.BatchProcessWorkerAdaptor<T>
@@ -124,7 +130,17 @@ public class Workers
             if (!canceled)
             {
                 doProcess(entry);
+                // increment processed count according to entry size
+                this.processed.addAndGet(countEntries(entry));
             }
+        }
+
+        private final AtomicInteger processed = new AtomicInteger(0);
+
+        @Override
+        public int getProcessedCount()
+        {
+            return this.processed.get();
         }
 
         public synchronized boolean cancel()
@@ -138,6 +154,13 @@ public class Workers
         }
 
         protected abstract void doProcess(T entry) throws Throwable;
+
+        /**
+         * How many logical items does given entry represent. Defaults to 1 (single node).
+         */
+        protected int countEntries(T entry) {
+            return 1;
+        }
     }
 
     public static class ProcessNodeWorker extends BaseProcessWorker<Object>
@@ -195,6 +218,11 @@ public class Workers
                 logger.trace(String.format("call on function gave %d results out of %d",
                                            ((NativeArray) resultArray).getIds().length, entry.size()));
             }
+        }
+
+        @Override
+        protected int countEntries(List<Object> entry) {
+            return entry == null ? 0 : entry.size();
         }
     }
 
