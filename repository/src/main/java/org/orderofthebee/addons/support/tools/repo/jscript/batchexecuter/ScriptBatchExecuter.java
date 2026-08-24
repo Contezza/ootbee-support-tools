@@ -29,7 +29,9 @@
 package org.orderofthebee.addons.support.tools.repo.jscript.batchexecuter;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.alfresco.repo.batch.BatchProcessor;
@@ -46,8 +48,10 @@ import org.mozilla.javascript.Scriptable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.extensions.webscripts.annotation.ScriptClass;
 import org.springframework.extensions.webscripts.annotation.ScriptClassType;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * JavaScript object which helps execute big data changes in Alfresco.
@@ -64,6 +68,18 @@ import org.springframework.extensions.webscripts.annotation.ScriptClassType;
 public class ScriptBatchExecuter extends BaseScopableProcessorExtension implements ApplicationContextAware {
 
     private static final Log logger = LogFactory.getLog(ScriptBatchExecuter.class);
+
+    private TaskExecutor asyncExecutor = createDefaultExecutor();
+
+    private static TaskExecutor createDefaultExecutor() {
+        ThreadPoolTaskExecutor t = new ThreadPoolTaskExecutor();
+        t.setCorePoolSize(2);
+        t.setMaxPoolSize(4);
+        t.setQueueCapacity(100);
+        t.setThreadNamePrefix("batchExecuter-");
+        t.initialize();
+        return t;
+    }
 
     private ServiceRegistry serviceRegistry;
     private TransactionService transactionService;
@@ -92,6 +108,34 @@ public class ScriptBatchExecuter extends BaseScopableProcessorExtension implemen
     }
 
     /**
+     * Starts processing an array of objects, optionally in a background thread.
+     *
+     * @param params   processing params, with array stored as 'items' property. See
+     *                 {@link BatchJobParameters} for all parameters.
+     * @param runAsync whether the processing should be started asynchronously
+     * @return job ID.
+     */
+    public String processArray(Object params, boolean runAsync) {
+        if (!runAsync) {
+            return processArray(params);
+        }
+
+        final BatchJobParameters.ProcessArrayJobParameters job = BatchJobParameters.parseArrayParameters(params);
+        final Scriptable cachedScope = getScope();
+        final String user = AuthenticationUtil.getRunAsUser();
+
+        asyncExecutor.execute(() -> {
+            try {
+                doProcess(job, WorkProviders.CollectionWorkProviderFactory.getInstance(), job.getItems(), cachedScope,
+                        user);
+            } catch (Throwable e) {
+                logger.error("Asynchronous batch job failed: " + job.getName(), e);
+            }
+        });
+        return job.getName();
+    }
+
+    /**
      * Starts processing a folder and its children recursively, applying a function
      * to each
      * node or de.jgoldhammer.alfresco.jscript.batch of nodes. Both folders and
@@ -112,12 +156,109 @@ public class ScriptBatchExecuter extends BaseScopableProcessorExtension implemen
     }
 
     /**
+     * Starts processing a folder recursively, optionally in a background thread.
+     *
+     * @param params   processing params, with the folder ScriptNode stored as
+     *                 'root' property. See {@link BatchJobParameters} for all
+     *                 parameters.
+     * @param runAsync whether the processing should be started asynchronously
+     * @return job ID.
+     */
+    public String processFolderRecursively(Object params, boolean runAsync) {
+        if (!runAsync) {
+            return processFolderRecursively(params);
+        }
+
+        final BatchJobParameters.ProcessFolderJobParameters job = BatchJobParameters.parseFolderParameters(params);
+        final Scriptable cachedScope = getScope();
+        final String user = AuthenticationUtil.getRunAsUser();
+
+        asyncExecutor.execute(() -> {
+            try {
+                doProcess(job,
+                        new WorkProviders.FolderBrowsingWorkProviderFactory(serviceRegistry, cachedScope, logger),
+                        job.getRoot().getNodeRef(), cachedScope, user);
+            } catch (Throwable e) {
+                logger.error("Asynchronous folder batch job failed: " + job.getName(), e);
+            }
+        });
+        return job.getName();
+    }
+
+    /**
      * Get the list of currently executing de.jgoldhammer.alfresco.jscript.jobs.
      *
      * @return collection of de.jgoldhammer.alfresco.jscript.jobs being executed.
      */
     public Collection<BatchJobParameters> getCurrentJobs() {
         return runningJobs.values();
+    }
+
+    /**
+     * Returns number of items processed so far for given job id.
+     * Returns 0 when job is not found or not started.
+     */
+    @SuppressWarnings("rawtypes")
+    public int getCompletedForJob(String jobId) {
+        if (jobId == null) {
+            return 0;
+        }
+        Pair<WorkProviders.CancellableWorkProvider, Workers.CancellableWorker> pair = runningWorkProviders.get(jobId);
+        if (pair != null && pair.getSecond() != null) {
+            try {
+                return pair.getSecond().getProcessedCount();
+            } catch (Throwable e) {
+                logger.warn("Error getting processed count for job " + jobId, e);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Returns a summary map for a running job. The map contains basic job fields
+     * plus {@code totalEstimatedWorkSize} and {@code completed} counts when
+     * available.
+     */
+    @SuppressWarnings("rawtypes")
+    public Map<String, Object> getJobSummary(String jobId) {
+        Map<String, Object> out = new HashMap<>();
+        if (jobId == null) {
+            return out;
+        }
+        BatchJobParameters job = runningJobs.get(jobId);
+        if (job == null) {
+            return out;
+        }
+
+        out.put("id", job.getId());
+        out.put("name", job.getName());
+        out.put("batchSize", job.getBatchSize());
+        out.put("threads", job.getThreads());
+        out.put("disableRules", job.getDisableRules());
+        out.put("onNodeFunction", job.getOnNodeFunction());
+        out.put("onBatchFunction", job.getOnBatchFunction());
+        out.put("status", job.getStatus() != null ? job.getStatus().toString() : null);
+
+        int total = -1;
+        Pair<WorkProviders.CancellableWorkProvider, Workers.CancellableWorker> pair = runningWorkProviders.get(jobId);
+        if (pair != null && pair.getFirst() != null) {
+            try {
+                total = pair.getFirst().getTotalEstimatedWorkSize();
+            } catch (Throwable t) {
+                logger.debug("Error getting totalEstimatedWorkSize", t);
+            }
+        }
+        // fallback for array jobs when provider not available
+        if (total == -1 && job instanceof BatchJobParameters.ProcessArrayJobParameters) {
+            List<?> items = ((BatchJobParameters.ProcessArrayJobParameters) job).getItems();
+            if (items != null) {
+                total = items.size();
+            }
+        }
+
+        out.put("totalEstimatedWorkSize", total);
+        out.put("completed", getCompletedForJob(jobId));
+        return out;
     }
 
     /**
@@ -150,16 +291,21 @@ public class ScriptBatchExecuter extends BaseScopableProcessorExtension implemen
         return false;
     }
 
-    @SuppressWarnings("rawtypes")
     private <T> String doProcess(BatchJobParameters job,
             WorkProviders.NodeOrBatchWorkProviderFactory<T> workFactory,
             T data) {
+        return doProcess(job, workFactory, data, getScope(), AuthenticationUtil.getRunAsUser());
+    }
+
+    @SuppressWarnings("rawtypes")
+    private <T> String doProcess(BatchJobParameters job,
+            WorkProviders.NodeOrBatchWorkProviderFactory<T> workFactory,
+            T data,
+            Scriptable cachedScope,
+            String user) {
         try {
             /* Process items */
             runningJobs.put(job.getId(), job);
-
-            final Scriptable cachedScope = getScope();
-            final String user = AuthenticationUtil.getRunAsUser();
 
             RetryingTransactionHelper rth = transactionService.getRetryingTransactionHelper();
 
@@ -227,6 +373,12 @@ public class ScriptBatchExecuter extends BaseScopableProcessorExtension implemen
 
     public void setRuleService(RuleService ruleService) {
         this.ruleService = ruleService;
+    }
+
+    public void setAsyncExecutor(TaskExecutor asyncExecutor) {
+        if (asyncExecutor != null) {
+            this.asyncExecutor = asyncExecutor;
+        }
     }
 
     @Override

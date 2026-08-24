@@ -46,6 +46,15 @@
         <property name="personService" ref="PersonService"/>
     </bean>
 
+    <!-- Batch Executer async executor (used when processArray/processFolderRecursively runAsync=true) -->
+    <bean id="ootbee.batchExecuterAsyncExecutor"
+          class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="${batch.executer.corePoolSize:2}" />
+        <property name="maxPoolSize" value="${batch.executer.maxPoolSize:4}" />
+        <property name="queueCapacity" value="${batch.executer.queueCapacity:100}" />
+        <property name="threadNamePrefix" value="${batch.executer.threadNamePrefix:batchExecuter-}" />
+    </bean>
+
     <!-- Batch Executer Script Extension -->
     <bean id="ootbee.batchExecuterScript" parent="baseJavaScriptExtension"
           class="org.orderofthebee.addons.support.tools.repo.jscript.batchexecuter.ScriptBatchExecuter">
@@ -53,6 +62,7 @@
         <property name="serviceRegistry" ref="ServiceRegistry"/>
         <property name="transactionService" ref="TransactionService" />
         <property name="ruleService" ref="RuleService" />
+        <property name="asyncExecutor" ref="ootbee.batchExecuterAsyncExecutor" />
     </bean>
 
     <!-- Repo Admin Console Script Extension -->
