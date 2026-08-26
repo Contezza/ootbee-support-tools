@@ -135,7 +135,7 @@ public class ScriptBatchExecuter extends BaseScopableProcessorExtension implemen
                 logger.error("Asynchronous batch job failed: " + job.getName(), e);
             }
         });
-        return job.getName();
+        return job.getId();
     }
 
     /**
