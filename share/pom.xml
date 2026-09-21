@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.orderofthebee.support-tools</groupId>
         <artifactId>support-tools-parent</artifactId>
-        <version>1.2.3.1-SNAPSHOT</version>
+        <version>1.2.3.1</version>
     </parent>
 
     <artifactId>support-tools-share</artifactId>
@@ -178,7 +178,7 @@
 
             <plugin>
                 <groupId>de.acosix.maven</groupId>
-                <artifactId>jshint-maven-plugin</artifactId>
+                <artifactId>jshint-plugin</artifactId>
             </plugin>
 
             <plugin>

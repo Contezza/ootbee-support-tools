@@ -6,6 +6,8 @@
 
     <import resource="classpath:alfresco/module/ootbee-${project.artifactId}/context/jscript-extensions-context.xml" />
 
+    <bean class="org.orderofthebee.addons.support.tools.repo.spring.WebScriptConfigSourceEnhancer" />
+
     <bean class="org.alfresco.i18n.ResourceBundleBootstrapComponent">
         <property name="resourceBundles">
             <list>
