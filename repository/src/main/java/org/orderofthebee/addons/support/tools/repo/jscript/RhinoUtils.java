@@ -29,7 +29,6 @@
 package org.orderofthebee.addons.support.tools.repo.jscript;
 
 import org.alfresco.repo.jscript.ScriptNode;
-import org.apache.commons.lang3.StringUtils;
 import org.mozilla.javascript.*;
 
 import java.util.*;
@@ -98,7 +97,7 @@ public class RhinoUtils
             if (val instanceof String)
             {
                 String value = ((String) val);
-                if (StringUtils.isNotBlank(value))
+                if (value != null && !value.trim().isEmpty())
                 {
                     result = value;
                 }

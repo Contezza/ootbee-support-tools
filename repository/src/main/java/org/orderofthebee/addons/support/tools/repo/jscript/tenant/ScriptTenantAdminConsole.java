@@ -52,7 +52,7 @@ import java.io.IOException;
 public class ScriptTenantAdminConsole extends BaseProcessorExtension
 {
 
-    TenantInterpreter tenantInterpreter;
+    private TenantInterpreter tenantInterpreter;
 
     public void setTenantInterpreter(TenantInterpreter tenantInterpreter)
     {

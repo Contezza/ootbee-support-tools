@@ -48,8 +48,8 @@ import org.alfresco.service.cmr.repository.ChildAssociationRef;
 public class ScriptLinkService extends BaseScopableProcessorExtension
 {
 
-    DocumentLinkService documentLinkService;
-    ServiceRegistry services;
+    private DocumentLinkService documentLinkService;
+    private ServiceRegistry services;
 
     public void setDocumentLinkService(DocumentLinkService documentLinkService)
     {

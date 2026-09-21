@@ -77,6 +77,7 @@ public class Workers
         protected Log logger;
         private BaseScopableProcessorExtension scopable;
         private boolean canceled;
+        private final AtomicInteger processed = new AtomicInteger(0);
 
         protected Function processFunction;
 
@@ -134,8 +135,6 @@ public class Workers
                 this.processed.addAndGet(countEntries(entry));
             }
         }
-
-        private final AtomicInteger processed = new AtomicInteger(0);
 
         @Override
         public int getProcessedCount()

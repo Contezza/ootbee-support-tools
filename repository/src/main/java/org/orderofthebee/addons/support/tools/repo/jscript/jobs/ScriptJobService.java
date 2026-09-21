@@ -35,7 +35,6 @@ import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.jscript.BaseScopableProcessorExtension;
 import org.alfresco.repo.lock.JobLockService;
 import org.alfresco.service.cmr.repository.ScriptService;
-import org.apache.commons.lang3.StringUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
@@ -319,6 +318,17 @@ public class ScriptJobService extends BaseScopableProcessorExtension
      */
     public String printJobDetails()
     {
-        return StringUtils.join(getJobs().values(), "\n");
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (final ScriptJob job : getJobs().values())
+        {
+            if (!first)
+            {
+                sb.append('\n');
+            }
+            first = false;
+            sb.append(job);
+        }
+        return sb.toString();
     }
 }

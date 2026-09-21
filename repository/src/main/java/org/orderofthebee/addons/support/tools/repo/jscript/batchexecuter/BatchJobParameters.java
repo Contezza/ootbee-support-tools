@@ -30,11 +30,11 @@ package org.orderofthebee.addons.support.tools.repo.jscript.batchexecuter;
 
 import org.orderofthebee.addons.support.tools.repo.jscript.RhinoUtils;
 import org.alfresco.repo.jscript.ScriptNode;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.ScriptableObject;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 
@@ -170,12 +170,24 @@ public abstract class BatchJobParameters
     {
         if (shortTitle == null)
             shortTitle = "";
-        String random = RandomStringUtils.randomAlphabetic(20);
+        String random = randomAlphabetic(20);
         job.setId(random);
         // Make name shorter for nicer logs
         job.setName(String.format("BatchExecuter_%s_%s",
                                   shortTitle.substring(0, Math.min(20, shortTitle.length())),
                                   random.substring(0, 4).toLowerCase()));
+    }
+
+    private static String randomAlphabetic(final int length)
+    {
+        final char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
+        final SecureRandom random = new SecureRandom();
+        final char[] buf = new char[length];
+        for (int i = 0; i < length; i++)
+        {
+            buf[i] = alphabet[random.nextInt(alphabet.length)];
+        }
+        return new String(buf);
     }
 
 

@@ -44,8 +44,8 @@ import com.google.common.base.Preconditions;
 public class ScriptDownloadService extends BaseScopableProcessorExtension
 {
 
-    DownloadService downloadService;
-    ServiceRegistry serviceRegistry;
+    private DownloadService downloadService;
+    private ServiceRegistry serviceRegistry;
 
     public void setServiceRegistry(ServiceRegistry serviceRegistry)
     {

@@ -43,7 +43,7 @@ import com.google.common.base.Preconditions;
 public class ScriptQuickshareService extends BaseScopableProcessorExtension
 {
 
-    QuickShareService quickShareService;
+    private QuickShareService quickShareService;
 
     public void setQuickShareService(QuickShareService quickShareService)
     {

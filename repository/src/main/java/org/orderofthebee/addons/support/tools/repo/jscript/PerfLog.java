@@ -30,7 +30,6 @@ package org.orderofthebee.addons.support.tools.repo.jscript;
 
 import java.text.MessageFormat;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -82,7 +81,7 @@ public class PerfLog
         if (LOG.isInfoEnabled() || LOG.isWarnEnabled())
         {
             startTime = System.currentTimeMillis();
-            if (StringUtils.isNotEmpty(message))
+            if (message != null && !message.isEmpty())
             {
                 LOG.info(MessageFormat.format(message, params));
             }

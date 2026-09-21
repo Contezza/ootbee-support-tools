@@ -52,7 +52,7 @@ import java.io.IOException;
 public class ScriptWorkflowConsole extends BaseProcessorExtension
 {
 
-    WorkflowInterpreter workflowInterpreter;
+    private WorkflowInterpreter workflowInterpreter;
 
     public void setWorkflowInterpreter(WorkflowInterpreter workflowInterpreter)
     {

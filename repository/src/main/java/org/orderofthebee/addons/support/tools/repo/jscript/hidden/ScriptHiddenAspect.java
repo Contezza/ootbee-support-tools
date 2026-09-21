@@ -41,7 +41,7 @@ import com.google.common.base.Preconditions;
 public class ScriptHiddenAspect extends BaseScopableProcessorExtension
 {
 
-    HiddenAspect hiddenAspect;
+    private HiddenAspect hiddenAspect;
 
     public void setHiddenAspect(HiddenAspect hiddenAspect)
     {

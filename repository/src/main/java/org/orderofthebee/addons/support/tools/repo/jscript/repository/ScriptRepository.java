@@ -42,11 +42,11 @@ import org.alfresco.service.cmr.site.SiteService;
 public class ScriptRepository extends BaseScopableProcessorExtension
 {
 
-    Repository repository;
-    ServiceRegistry serviceRegistry;
-    SiteService siteService;
-    DocLibNodeLocator docLibNodeLocator;
-    PersonService personService;
+    private Repository repository;
+    private ServiceRegistry serviceRegistry;
+    private SiteService siteService;
+    private DocLibNodeLocator docLibNodeLocator;
+    private PersonService personService;
 
     public void setPersonService(PersonService personService)
     {

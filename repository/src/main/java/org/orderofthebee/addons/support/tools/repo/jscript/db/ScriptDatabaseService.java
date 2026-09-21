@@ -104,17 +104,15 @@ public class ScriptDatabaseService extends BaseProcessorExtension implements App
     {
         Object dsBean = applicationContext.getBean(dataSourceName);
 
+        // JDBC DataSource remains javax.sql on all ACS versions (unlike JTA).
         if (dsBean instanceof DataSource)
         {
             JdbcDaoSupport daoSupport = new NamedParameterJdbcDaoSupport();
             daoSupport.setDataSource((DataSource) dsBean);
             return daoSupport;
         }
-        else
-        {
 
-            throw new AlfrescoRuntimeException("dataSource '" + dataSourceName + "' not found.");
-        }
+        throw new AlfrescoRuntimeException("dataSource '" + dataSourceName + "' not found.");
     }
 
 }

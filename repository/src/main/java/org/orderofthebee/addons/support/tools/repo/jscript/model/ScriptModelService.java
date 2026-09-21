@@ -47,8 +47,8 @@ import org.mozilla.javascript.Scriptable;
 public class ScriptModelService extends BaseScopableProcessorExtension
 {
 
-    CustomModelService customModelService;
-    ServiceRegistry serviceRegistry;
+    private CustomModelService customModelService;
+    private ServiceRegistry serviceRegistry;
 
     public void setServiceRegistry(ServiceRegistry serviceRegistry)
     {

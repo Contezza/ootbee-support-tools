@@ -45,7 +45,7 @@ import java.util.List;
 public class ScriptRulesService extends BaseScopableProcessorExtension
 {
 
-    RuleService ruleService;
+    private RuleService ruleService;
 
     public void setRuleService(RuleService ruleService)
     {

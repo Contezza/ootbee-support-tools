@@ -52,7 +52,7 @@ import java.io.IOException;
 public class ScriptRepoAdminConsole extends BaseProcessorExtension
 {
 
-    RepoAdminInterpreter repoAdminInterpreter;
+    private RepoAdminInterpreter repoAdminInterpreter;
 
     public void setRepoAdminInterpreter(RepoAdminInterpreter repoAdminInterpreter)
     {

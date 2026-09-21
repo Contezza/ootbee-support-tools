@@ -41,3 +41,11 @@ MIT Licnse
 Sizzle.js
 Copyright JS Foundation and other contributors
 http://sizzlejs.com/
+
+
+Alfresco JavaScript Extensions
+Copyright Jens Goldhammer and contributors
+https://github.com/jgoldhammer/alfresco-jscript-extensions
+Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+Forked into OOTBee Support Tools; modifications / derivative work re-licensed under GNU Lesser General Public License v3
+The fork includes TicketScriptExtension originally Copyright (C) 2007-2011 BlueXML (www.bluexml.com), GNU GPL v3
