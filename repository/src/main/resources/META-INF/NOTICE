@@ -49,3 +49,4 @@ https://github.com/jgoldhammer/alfresco-jscript-extensions
 Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
 Forked into OOTBee Support Tools; modifications / derivative work re-licensed under GNU Lesser General Public License v3
 The fork includes TicketScriptExtension originally Copyright (C) 2007-2011 BlueXML (www.bluexml.com), GNU GPL v3
+The fork includes permission helpers originally Copyright (C) 2008-2015 Citeck LLC (Citeck EcoS), GNU Lesser General Public License v3

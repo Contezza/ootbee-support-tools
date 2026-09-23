@@ -38,7 +38,11 @@ import org.alfresco.service.cmr.audit.AuditService;
 import org.alfresco.service.cmr.audit.AuditService.AuditQueryCallback;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
+import org.alfresco.error.AlfrescoRuntimeException;
 
 /**
  * ScriptAuditService is a wrapper around the Auditservice of Alfresco. It allows to enable/disable the auditservice,
@@ -51,10 +55,42 @@ public class ScriptAuditService extends BaseScopableProcessorExtension
 {
 
     private AuditService auditService;
+    private Set<String> clearableApps = new HashSet<String>();
 
     public void setAuditService(AuditService auditService)
     {
         this.auditService = auditService;
+    }
+
+    /**
+     * Comma-separated audit application names that scripts may clear.
+     * Empty means no application can be cleared.
+     */
+    public void setClearableApps(String clearableApps)
+    {
+        Set<String> apps = new HashSet<String>();
+        if (clearableApps != null)
+        {
+            for (String app : clearableApps.split(","))
+            {
+                String trimmed = app.trim();
+                if (trimmed.length() > 0)
+                {
+                    apps.add(trimmed);
+                }
+            }
+        }
+        this.clearableApps = apps;
+    }
+
+    private void assertClearable(String appName)
+    {
+        if (appName == null || !this.clearableApps.contains(appName))
+        {
+            throw new AlfrescoRuntimeException(
+                "Clearing audit application '" + appName
+                + "' is not allowed. Add it to ootbee-support-tools.jscript.audit.clearableApps.");
+        }
     }
 
     public boolean isAllEnabled()
@@ -85,6 +121,7 @@ public class ScriptAuditService extends BaseScopableProcessorExtension
 
     public void clearAll(String appName)
     {
+        assertClearable(appName);
         auditService.clearAudit(appName, null, null);
     }
 
@@ -105,6 +142,7 @@ public class ScriptAuditService extends BaseScopableProcessorExtension
      **/
     public void clear(String appName, long start, long end)
     {
+        assertClearable(appName);
         auditService.clearAudit(appName, start, end);
     }
 

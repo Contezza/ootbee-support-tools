@@ -169,13 +169,6 @@ public class ScriptFavoritesService extends BaseScopableProcessorExtension
         Object[] favoritesArray = favouritesList.toArray(new Object[favouritesList.size()]);
 
         return Context.getCurrentContext().newArray(getScope(), favoritesArray);
-
-
     }
-
-
-
-
-
 
 }

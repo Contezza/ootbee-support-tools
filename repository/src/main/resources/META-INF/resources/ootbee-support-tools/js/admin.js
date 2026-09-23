@@ -386,7 +386,7 @@ var Admin = Admin || {};
             req.overrideMimeType((config.responseContentType ? config.responseContentType : "application/json") + "; charset=utf-8");
         }
         req.open(config.method ? config.method : "GET", config.url);
-        if ((config.method === "POST" || config.method === "PUT") && Admin.CSRF.enabled)
+        if ((config.method === "POST" || config.method === "PUT" || config.method === "DELETE") && Admin.CSRF.enabled)
         {
             req.setRequestHeader(Admin.CSRF.getHeader(), Admin.CSRFToken());
         }

@@ -22,27 +22,11 @@
  *
  * This file is part of code forked from the alfresco-jscript-extensions project
  * by Jens Goldhammer, which was licensed under the Apache License, Version 2.0.
- * In accordance with that license, the modifications / derivative work
+ * The permission helpers were copied from Citeck EcoS (Copyright (C) 2008-2015
+ * Citeck LLC, GNU Lesser General Public License v3).
+ * In accordance with those licenses, the modifications / derivative work
  * is now being licensed under the LGPL as part of the OOTBee Support Tools
  * addon.
- */
-/*
- * Copyright (C) 2008-2015 Citeck LLC.
- *
- * This file is part of Citeck EcoS
- *
- * Citeck EcoS is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Citeck EcoS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Citeck EcoS. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.orderofthebee.addons.support.tools.repo.jscript.permission;
 
@@ -59,7 +43,7 @@ import org.alfresco.service.cmr.security.PermissionService;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.google.common.base.Preconditions;
+import org.alfresco.util.ParameterCheck;
 
 /**
  * encapsulates some permissionService methods related to nodes.
@@ -77,22 +61,22 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
 
     public boolean hasReadPermission(String nodeRef)
     {
-        Preconditions.checkNotNull(nodeRef);
+        ParameterCheck.mandatory("nodeRef", nodeRef);
         return permissionService.hasReadPermission(new NodeRef(nodeRef)) == AccessStatus.ALLOWED;
     }
 
     public boolean hasPermission(String nodeRef, String permission)
     {
-        Preconditions.checkNotNull(nodeRef);
-        Preconditions.checkNotNull(permission);
+        ParameterCheck.mandatory("nodeRef", nodeRef);
+        ParameterCheck.mandatory("permission", permission);
         return permissionService.hasPermission(new NodeRef(nodeRef), permission) == AccessStatus.ALLOWED;
     }
 
     public boolean hasPermission(String nodeRef, String permission, String authority)
     {
-        Preconditions.checkNotNull(nodeRef);
-        Preconditions.checkNotNull(permission);
-        Preconditions.checkNotNull(authority);
+        ParameterCheck.mandatory("nodeRef", nodeRef);
+        ParameterCheck.mandatory("permission", permission);
+        ParameterCheck.mandatory("authority", authority);
 
         return AuthenticationUtil.runAs(
                    () -> permissionService.hasPermission(new NodeRef(nodeRef), permission) == AccessStatus.ALLOWED,
@@ -101,23 +85,23 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
 
     public boolean hasReadPermission(ScriptNode node)
     {
-        Preconditions.checkNotNull(node);
+        ParameterCheck.mandatory("node", node);
         return permissionService.hasReadPermission(node.getNodeRef()) == AccessStatus.ALLOWED;
     }
 
     public boolean hasPermission(ScriptNode node, String permission)
     {
-        Preconditions.checkNotNull(node);
-        Preconditions.checkNotNull(permission);
+        ParameterCheck.mandatory("node", node);
+        ParameterCheck.mandatory("permission", permission);
         return permissionService.hasPermission(node.getNodeRef(), permission) == AccessStatus.ALLOWED;
     }
 
 
     public boolean hasPermission(ScriptNode node, String permission, ScriptNode authority)
     {
-        Preconditions.checkNotNull(node);
-        Preconditions.checkNotNull(permission);
-        Preconditions.checkNotNull(authority);
+        ParameterCheck.mandatory("node", node);
+        ParameterCheck.mandatory("permission", permission);
+        ParameterCheck.mandatory("authority", authority);
 
         return AuthenticationUtil.runAs(
                    () -> permissionService.hasPermission(node.getNodeRef(), permission) == AccessStatus.ALLOWED,
@@ -143,9 +127,9 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
         boolean allow)
     {
 
-        Preconditions.checkNotNull(nodeRefId);
-        Preconditions.checkNotNull(permission);
-        Preconditions.checkNotNull(authority);
+        ParameterCheck.mandatory("nodeRefId", nodeRefId);
+        ParameterCheck.mandatory("permission", permission);
+        ParameterCheck.mandatory("authority", authority);
 
         NodeRef nodeRef = new NodeRef(nodeRefId);
         permissionService.setPermission(
@@ -163,7 +147,7 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
      */
     public Scriptable getPermissions(String nodeRef)
     {
-        Preconditions.checkNotNull(nodeRef);
+        ParameterCheck.mandatory("nodeRef", nodeRef);
         Set<AccessPermission> permissions = permissionService.getPermissions(new NodeRef(nodeRef));
         Object[] permissionsArray = permissions.toArray(new Object[permissions.size()]);
 
@@ -178,7 +162,7 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
      */
     public Scriptable getPermissionsOfCurrentUser(ScriptNode node)
     {
-        Preconditions.checkNotNull(node);
+        ParameterCheck.mandatory("node", node);
         return getPermissions(node.getNodeRef().toString());
     }
 
@@ -189,7 +173,7 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
      */
     public Scriptable getAllPermissions(ScriptNode node)
     {
-        Preconditions.checkNotNull(node);
+        ParameterCheck.mandatory("node", node);
         Set<AccessPermission> permissions = permissionService.getAllSetPermissions(node.getNodeRef());
 
         Object[] permissionsArray = permissions.toArray(new Object[permissions.size()]);
@@ -212,9 +196,9 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
         final String authority)
     {
 
-        Preconditions.checkNotNull(nodeRefId);
-        Preconditions.checkNotNull(permission);
-        Preconditions.checkNotNull(authority);
+        ParameterCheck.mandatory("nodeRefId", nodeRefId);
+        ParameterCheck.mandatory("permission", permission);
+        ParameterCheck.mandatory("authority", authority);
 
         NodeRef nodeRef = new NodeRef(nodeRefId);
         permissionService.deletePermission(
@@ -231,7 +215,7 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
      */
     public void deletePermissions(String nodeRefId)
     {
-        Preconditions.checkNotNull(nodeRefId);
+        ParameterCheck.mandatory("nodeRefId", nodeRefId);
         NodeRef nodeRef = new NodeRef(nodeRefId);
         permissionService.deletePermissions(
             nodeRef);
@@ -248,8 +232,8 @@ public class ScriptPermissionService extends BaseScopableProcessorExtension
         final String nodeRefId,
         final String authority)
     {
-        Preconditions.checkNotNull(nodeRefId);
-        Preconditions.checkNotNull(authority);
+        ParameterCheck.mandatory("nodeRefId", nodeRefId);
+        ParameterCheck.mandatory("authority", authority);
 
         NodeRef nodeRef = new NodeRef(nodeRefId);
         permissionService.clearPermission(

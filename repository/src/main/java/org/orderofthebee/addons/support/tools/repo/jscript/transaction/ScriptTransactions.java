@@ -34,6 +34,7 @@ package org.orderofthebee.addons.support.tools.repo.jscript.transaction;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.processor.BaseProcessorExtension;
 import org.springframework.extensions.webscripts.annotation.ScriptClass;
 import org.springframework.extensions.webscripts.annotation.ScriptClassType;
@@ -91,11 +92,11 @@ public class ScriptTransactions extends BaseProcessorExtension
             {
                 throw (Error) cause;
             }
-            throw new IllegalStateException(cause);
+            throw new AlfrescoRuntimeException("Transaction service call failed", cause);
         }
         catch (final ReflectiveOperationException ex)
         {
-            throw new IllegalStateException("Unable to call transaction service method " + methodName, ex);
+            throw new AlfrescoRuntimeException("Unable to call transaction service method " + methodName, ex);
         }
     }
 

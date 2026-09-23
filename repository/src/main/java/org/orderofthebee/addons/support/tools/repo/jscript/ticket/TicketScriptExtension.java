@@ -34,8 +34,7 @@
 package org.orderofthebee.addons.support.tools.repo.jscript.ticket;
 
 import org.alfresco.repo.jscript.BaseScopableProcessorExtension;
-import org.alfresco.repo.security.authentication.TicketComponent;
-import org.alfresco.service.ServiceRegistry;
+import org.alfresco.service.cmr.security.AuthenticationService;
 import org.mozilla.javascript.Context;
 
 /**
@@ -44,46 +43,16 @@ import org.mozilla.javascript.Context;
 public class TicketScriptExtension extends BaseScopableProcessorExtension
 {
 
-    private ServiceRegistry serviceRegistry;
-    private TicketComponent ticketComponent;
+    private AuthenticationService authenticationService;
 
-    /**
-     * @return the serviceRegistry
-     */
-    public ServiceRegistry getServiceRegistry()
+    public void setAuthenticationService(AuthenticationService authenticationService)
     {
-        return serviceRegistry;
-    }
-
-    /**
-     * @param serviceRegistry
-     *                        the serviceRegistry to set
-     */
-    public void setServiceRegistry(ServiceRegistry serviceRegistry)
-    {
-        this.serviceRegistry = serviceRegistry;
-    }
-
-    /**
-     * @return the ticketComponent
-     */
-    public TicketComponent getTicketComponent()
-    {
-        return ticketComponent;
-    }
-
-    /**
-     * @param ticketComponent
-     *                        the ticketComponent to set
-     */
-    public void setTicketComponent(TicketComponent ticketComponent)
-    {
-        this.ticketComponent = ticketComponent;
+        this.authenticationService = authenticationService;
     }
 
     public Object getCurrentTicket()
     {
-        String ticket = serviceRegistry.getAuthenticationService().getCurrentTicket();
+        String ticket = authenticationService.getCurrentTicket();
         return Context.getCurrentContext().newObject(getScope(), "String", new Object[] { ticket });
     }
 }

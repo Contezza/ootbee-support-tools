@@ -38,21 +38,11 @@ import org.alfresco.service.cmr.repository.ScriptService;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.CronTrigger;
-import org.quartz.JobBuilder;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The script job service can read the configured quartz jobs within an Alfresco
@@ -60,7 +50,7 @@ import java.util.Set;
  * You can iterate over all jobs, get a job by name or print the details.
  * Running, state checking and cancel a job run is part of the ScriptJob class.
  *
- * Refactored for Quartz 2.x API compatibility.
+ * Works with Quartz 1.x (ACS 5) and Quartz 2.x (ACS 6+).
  *
  * @author jgoldhammer
  * @author Order of the Bee
@@ -94,41 +84,19 @@ public class ScriptJobService extends BaseScopableProcessorExtension
     {
         Map<String, ScriptJob> jobs = new HashMap<>();
 
-        try
+        for (QuartzBridge.ListedJob listed : QuartzBridge.listJobs(scheduler))
         {
-            List<String> jobGroupNames = scheduler.getJobGroupNames();
-            for (String jobGroupName : jobGroupNames)
-            {
-                Set<JobKey> jobKeys = scheduler
-                                      .getJobKeys(org.quartz.impl.matchers.GroupMatcher.jobGroupEquals(jobGroupName));
-                for (JobKey jobKey : jobKeys)
-                {
-                    List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobKey);
-                    if (!triggers.isEmpty())
-                    {
-                        Trigger jobTrigger = triggers.get(0);
-                        ScriptJob job = new ScriptJob(
-                            jobKey.getName(),
-                            jobKey.getGroup(),
-                            scheduler,
-                            jobTrigger.getPreviousFireTime(),
-                            jobTrigger.getNextFireTime(),
-                            jobTrigger.getCalendarName(),
-                            jobTrigger.getKey().getName(),
-                            jobTrigger.getKey().getGroup());
-
-                        if (jobTrigger instanceof CronTrigger)
-                        {
-                            job.setCronExpression(((CronTrigger) jobTrigger).getCronExpression());
-                        }
-                        jobs.put(jobKey.getName(), job);
-                    }
-                }
-            }
-        }
-        catch (SchedulerException e)
-        {
-            throw new AlfrescoRuntimeException("Cannot determine the configured Alfresco jobs via Quartz", e);
+            ScriptJob job = new ScriptJob(
+                listed.jobName,
+                listed.groupName,
+                scheduler,
+                listed.previousFireTime,
+                listed.nextFireTime,
+                listed.calendarName,
+                listed.triggerName,
+                listed.triggerGroup);
+            job.setCronExpression(listed.cronExpression);
+            jobs.put(listed.jobName, job);
         }
         return jobs;
     }
@@ -226,33 +194,14 @@ public class ScriptJobService extends BaseScopableProcessorExtension
     {
         String fullJobName = jobName + " (run as " + (runAsUser != null ? runAsUser : "system") + ")";
 
-        JobDataMap jobDataMap = new JobDataMap();
-        jobDataMap.put(ExecuteScriptJob.PARAM_RUN_AS, runAsUser);
-        jobDataMap.put(ExecuteScriptJob.PARAM_SCRIPT, script);
-        jobDataMap.put(ExecuteScriptJob.PARAM_SCRIPT_SERVICE, scriptService);
-        jobDataMap.put("jobLockService", jobLockService);
+        Map<String, Object> jobData = new HashMap<>();
+        jobData.put(ExecuteScriptJob.PARAM_RUN_AS, runAsUser);
+        jobData.put(ExecuteScriptJob.PARAM_SCRIPT, script);
+        jobData.put(ExecuteScriptJob.PARAM_SCRIPT_SERVICE, scriptService);
+        jobData.put("jobLockService", jobLockService);
 
-        // Quartz 2.x: Use JobBuilder
-        JobDetail job = JobBuilder.newJob(ExecuteScriptJob.class)
-                        .withIdentity(fullJobName, SCRIPT_JOB_GROUP)
-                        .usingJobData(jobDataMap)
-                        .build();
-
-        // Quartz 2.x: Use TriggerBuilder with CronScheduleBuilder
-        Trigger trigger = TriggerBuilder.newTrigger()
-                          .withIdentity("trigger_" + System.nanoTime(), SCRIPT_TRIGGER_GROUP)
-                          .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
-                          .build();
-
-        try
-        {
-            scheduler.scheduleJob(job, trigger);
-        }
-        catch (SchedulerException e)
-        {
-            throw new AlfrescoRuntimeException(
-                "Cannot schedule executeScriptJob with script=" + script + " and runAs=" + runAsUser, e);
-        }
+        QuartzBridge.scheduleCronJob(scheduler, fullJobName, SCRIPT_JOB_GROUP, "trigger_" + System.nanoTime(),
+                                     SCRIPT_TRIGGER_GROUP, cronExpression, jobData, ExecuteScriptJob.class);
     }
 
     /**
@@ -278,34 +227,8 @@ public class ScriptJobService extends BaseScopableProcessorExtension
         try
         {
             String script = cx.decompileFunctionBody(scriptFunction, 3).trim();
-            String fullJobName = jobName + " (run as " + (runAsUser != null ? runAsUser : "system") + ")";
-
-            JobDataMap jobDataMap = new JobDataMap();
-            jobDataMap.put(ExecuteScriptJob.PARAM_RUN_AS, runAsUser);
-            jobDataMap.put(ExecuteScriptJob.PARAM_SCRIPT, script);
-            jobDataMap.put(ExecuteScriptJob.PARAM_SCRIPT_SERVICE, scriptService);
-            jobDataMap.put("jobLockService", jobLockService);
-
-            JobDetail job = JobBuilder.newJob(ExecuteScriptJob.class)
-                            .withIdentity(fullJobName, SCRIPT_JOB_GROUP)
-                            .usingJobData(jobDataMap)
-                            .build();
-
-            Trigger trigger = TriggerBuilder.newTrigger()
-                              .withIdentity("trigger_" + System.nanoTime(), SCRIPT_TRIGGER_GROUP)
-                              .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
-                              .build();
-
-            scheduler.scheduleJob(job, trigger);
-            return fullJobName;
-
-        }
-        catch (SchedulerException e)
-        {
-            throw new AlfrescoRuntimeException(
-                "Cannot schedule executeScriptJob with cronExpression=" + cronExpression + " and runAs="
-                + runAsUser,
-                e);
+            scheduleTemporaryJob(jobName, script, runAsUser, cronExpression);
+            return jobName + " (run as " + (runAsUser != null ? runAsUser : "system") + ")";
         }
         finally
         {

@@ -34,6 +34,8 @@ package org.orderofthebee.addons.support.tools.repo.jscript.transaction;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.alfresco.error.AlfrescoRuntimeException;
+
 /**
  * Wrapper around an Alfresco {@code UserTransaction} that works on both
  * {@code javax.transaction} (ACS 5–7) and {@code jakarta.transaction} (ACS 23+).
@@ -101,11 +103,11 @@ public class ScriptTransaction
             {
                 throw (Error) cause;
             }
-            throw new IllegalStateException(cause);
+            throw new AlfrescoRuntimeException("Transaction call failed", cause);
         }
         catch (final ReflectiveOperationException ex)
         {
-            throw new IllegalStateException("Unable to call transaction method " + methodName, ex);
+            throw new AlfrescoRuntimeException("Unable to call transaction method " + methodName, ex);
         }
     }
 

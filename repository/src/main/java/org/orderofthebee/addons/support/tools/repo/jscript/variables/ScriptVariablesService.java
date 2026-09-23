@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.repo.jscript.BaseScopableProcessorExtension;
 
 /**
@@ -46,15 +47,30 @@ public class ScriptVariablesService extends BaseScopableProcessorExtension imple
 {
 
     private Properties properties;
+    private boolean allowWrite;
 
     public void setProperties(final Properties globalProperties)
     {
         this.properties = globalProperties;
     }
 
+    public void setAllowWrite(final boolean allowWrite)
+    {
+        this.allowWrite = allowWrite;
+    }
+
+    private void assertWriteAllowed()
+    {
+        if (!this.allowWrite)
+        {
+            throw new AlfrescoRuntimeException(
+                "Writing global properties is disabled. Set ootbee-support-tools.jscript.globalProperties.allowWrite=true to enable.");
+        }
+    }
+
     public Object getProperties()
     {
-        return new ScriptProperties(this.properties);
+        return new ScriptProperties(this.properties, this.allowWrite);
     }
 
     /**
@@ -109,24 +125,28 @@ public class ScriptVariablesService extends BaseScopableProcessorExtension imple
     @Override
     public Object put(final Object key, final Object value)
     {
+        assertWriteAllowed();
         return this.properties.put(key, value);
     }
 
     @Override
     public Object remove(final Object key)
     {
+        assertWriteAllowed();
         return this.properties.remove(key);
     }
 
     @Override
     public void putAll(final Map<? extends Object, ? extends Object> m)
     {
+        assertWriteAllowed();
         this.properties.putAll(m);
     }
 
     @Override
     public void clear()
     {
+        assertWriteAllowed();
         this.properties.clear();
     }
 
@@ -155,10 +175,21 @@ public class ScriptVariablesService extends BaseScopableProcessorExtension imple
     public static class ScriptProperties implements Map<Object, Object>
     {
         private final Properties properties;
+        private final boolean allowWrite;
 
-        public ScriptProperties(final Properties p)
+        public ScriptProperties(final Properties p, final boolean allowWrite)
         {
             this.properties = p;
+            this.allowWrite = allowWrite;
+        }
+
+        private void assertWriteAllowed()
+        {
+            if (!this.allowWrite)
+            {
+                throw new AlfrescoRuntimeException(
+                    "Writing global properties is disabled. Set ootbee-support-tools.jscript.globalProperties.allowWrite=true to enable.");
+            }
         }
 
         public java.util.Enumeration<?> propertyNames()
@@ -210,24 +241,28 @@ public class ScriptVariablesService extends BaseScopableProcessorExtension imple
         @Override
         public Object put(final Object key, final Object value)
         {
+            assertWriteAllowed();
             return this.properties.put(key, value);
         }
 
         @Override
         public Object remove(final Object key)
         {
+            assertWriteAllowed();
             return this.properties.remove(key);
         }
 
         @Override
         public void putAll(final Map<? extends Object, ? extends Object> m)
         {
+            assertWriteAllowed();
             this.properties.putAll(m);
         }
 
         @Override
         public void clear()
         {
+            assertWriteAllowed();
             this.properties.clear();
         }
 

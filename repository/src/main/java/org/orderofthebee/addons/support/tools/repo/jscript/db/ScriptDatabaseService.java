@@ -59,6 +59,21 @@ public class ScriptDatabaseService extends BaseProcessorExtension implements App
 {
 
     private ApplicationContext applicationContext;
+    private boolean enabled;
+
+    public void setEnabled(boolean enabled)
+    {
+        this.enabled = enabled;
+    }
+
+    private void assertEnabled()
+    {
+        if (!this.enabled)
+        {
+            throw new AlfrescoRuntimeException(
+                "JavaScript database access is disabled. Set ootbee-support-tools.jscript.database.enabled=true to enable.");
+        }
+    }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException
@@ -78,6 +93,7 @@ public class ScriptDatabaseService extends BaseProcessorExtension implements App
     @ScriptMethod()
     public int update(String dataSourceName, String sql, Object... params)
     {
+        assertEnabled();
         checkAdminAuthority();
         JdbcDaoSupport daoSupport = getDaoSupport(dataSourceName);
         Preconditions.checkNotNull(daoSupport, " daosupport is null- please check the datasource name");
@@ -86,6 +102,7 @@ public class ScriptDatabaseService extends BaseProcessorExtension implements App
 
     public Map<String, Object>[] query(String dataSourceName, String sql, Object... params)
     {
+        assertEnabled();
         checkAdminAuthority();
         JdbcDaoSupport daoSupport = getDaoSupport(dataSourceName);
         Preconditions.checkNotNull(daoSupport, " daosupport is null- please check the datasource name");

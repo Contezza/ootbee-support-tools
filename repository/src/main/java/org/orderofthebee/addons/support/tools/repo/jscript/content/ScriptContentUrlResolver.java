@@ -28,50 +28,69 @@
  */
 package org.orderofthebee.addons.support.tools.repo.jscript.content;
 
+import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.model.ContentModel;
 import org.alfresco.repo.jscript.BaseScopableProcessorExtension;
-import org.alfresco.service.cmr.model.FileFolderService;
-import org.alfresco.service.cmr.model.FileInfo;
+import org.alfresco.service.cmr.repository.ContentReader;
+import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.namespace.NamespaceService;
+import org.alfresco.service.namespace.QName;
+import org.alfresco.util.ParameterCheck;
+import org.alfresco.util.PropertyCheck;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.util.Assert;
-
-import com.google.common.base.Preconditions;
 
 /**
- * helps to get the content url of a node.
- *
- * https://github.com/magnus-larsson/my-alfresco/blob/97538c73268e3ca77e39e8cc37d6f61f8f90b4c5/
- * repo/src/main/java/se/vgregion/alfresco/repo/scripts/ContentUrlResolver.java
- *
+ * Resolves the content store URL of a node property. Defaults to {@code cm:content}.
  */
 public class ScriptContentUrlResolver extends BaseScopableProcessorExtension implements InitializingBean
 {
 
-    private FileFolderService fileFolderService;
+    private ContentService contentService;
+    private NamespaceService namespaceService;
 
-    public void setFileFolderService(final FileFolderService fileFolderService)
+    public void setContentService(final ContentService contentService)
     {
-        this.fileFolderService = fileFolderService;
+        this.contentService = contentService;
     }
 
-    public String getContentUrl(final String node)
+    public void setNamespaceService(final NamespaceService namespaceService)
     {
-        Preconditions.checkNotNull(node);
-        NodeRef nodeRef = new NodeRef(node);
+        this.namespaceService = namespaceService;
+    }
 
-        final FileInfo fileInfo = fileFolderService.getFileInfo(nodeRef);
+    public String getContentUrl(final String nodeRef)
+    {
+        return getContentUrl(nodeRef, null);
+    }
 
-        if (fileInfo == null || fileInfo.getContentData() == null)
+    /**
+     * @param nodeRef node reference string
+     * @param propertyName short or full QName, or {@code null} for {@code cm:content}
+     */
+    public String getContentUrl(final String nodeRef, final String propertyName)
+    {
+        ParameterCheck.mandatoryString("nodeRef", nodeRef);
+        final QName property = propertyName == null || propertyName.length() == 0
+                               ? ContentModel.PROP_CONTENT
+                               : QName.resolveToQName(this.namespaceService, propertyName);
+        if (property == null)
         {
-            throw new IllegalArgumentException("Cannot get the content date for this node");
+            throw new AlfrescoRuntimeException("Could not resolve content property " + propertyName);
         }
-        return fileFolderService.getFileInfo(nodeRef).getContentData().getContentUrl();
+        final ContentReader reader = this.contentService.getReader(new NodeRef(nodeRef), property);
+        if (reader == null || !reader.exists())
+        {
+            throw new AlfrescoRuntimeException("No content for " + nodeRef + " property " + property);
+        }
+        return reader.getContentUrl();
     }
 
     @Override
     public void afterPropertiesSet() throws Exception
     {
-        Assert.notNull(fileFolderService, "FileFolderService must not be null");
+        PropertyCheck.mandatory(this, "contentService", this.contentService);
+        PropertyCheck.mandatory(this, "namespaceService", this.namespaceService);
     }
 
 }
