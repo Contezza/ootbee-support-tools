@@ -79,7 +79,7 @@ public class ScriptContentUrlResolver extends BaseScopableProcessorExtension imp
             throw new AlfrescoRuntimeException("Could not resolve content property " + propertyName);
         }
         final ContentReader reader = this.contentService.getReader(new NodeRef(nodeRef), property);
-        if (reader == null || !reader.exists())
+        if (reader == null)
         {
             throw new AlfrescoRuntimeException("No content for " + nodeRef + " property " + property);
         }
