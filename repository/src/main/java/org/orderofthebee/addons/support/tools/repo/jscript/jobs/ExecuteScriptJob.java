@@ -40,7 +40,7 @@ import org.quartz.JobExecutionException;
  * Quartz job that executes a scheduled inline JS script.
  * The job execution is cluster aware and uses the JobLockService.
  *
- * Uses {@code AbstractScheduledLockedJob.executeJob(JobExecutionContext)}, which exists on Quartz 1.x and 2.x.
+ * Compatible with Quartz 2.x API used by Alfresco.
  *
  * @author Jens Goldhammer
  * @author Order of the Bee

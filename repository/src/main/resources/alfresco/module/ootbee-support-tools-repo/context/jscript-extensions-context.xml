@@ -193,7 +193,7 @@
         <property name="attributeService" ref="AttributeService"/>
     </bean>
 
-    <!-- Job Service Script Extension (Quartz 1.x and 2.x) -->
+    <!-- Job Service Script Extension (Quartz 2.x compatible) -->
     <bean id="ootbee.scriptJobService" parent="baseJavaScriptExtension"
           class="org.orderofthebee.addons.support.tools.repo.jscript.jobs.ScriptJobService">
         <property name="extensionName" value="jobs"/>

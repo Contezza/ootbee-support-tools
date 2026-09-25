@@ -28,16 +28,22 @@
  */
 package org.orderofthebee.addons.support.tools.repo.jscript.jobs;
 
+import org.alfresco.error.AlfrescoRuntimeException;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.TriggerKey;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Class representing a job which can be used to trigger a new run, check if the
  * job is running and
  * cancel a running job (when the job class supports it).
  *
- * Works with Quartz 1.x (ACS 5) and Quartz 2.x (ACS 6+) via {@link QuartzBridge}.
+ * Refactored for Quartz 2.x API compatibility.
  *
  * @author jgoldhammer
  * @author Order of the Bee
@@ -73,7 +79,14 @@ public class ScriptJob
      */
     public void runNow()
     {
-        QuartzBridge.triggerJob(scheduler, this.jobName, this.groupName);
+        try
+        {
+            scheduler.triggerJob(JobKey.jobKey(this.jobName, this.groupName));
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Cannot start job " + this, e);
+        }
     }
 
     /**
@@ -83,7 +96,25 @@ public class ScriptJob
      */
     public boolean isRunning()
     {
-        return QuartzBridge.isRunning(scheduler, this.jobName, this.groupName);
+        boolean isRunning = false;
+        try
+        {
+            List<JobExecutionContext> currentlyExecutingJobs = scheduler.getCurrentlyExecutingJobs();
+            for (JobExecutionContext job : currentlyExecutingJobs)
+            {
+                JobKey key = job.getJobDetail().getKey();
+                if (key.getName().equals(this.jobName) && key.getGroup().equals(this.groupName))
+                {
+                    isRunning = true;
+                    break;
+                }
+            }
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Cannot check if the current job " + this + " is running", e);
+        }
+        return isRunning;
     }
 
     @Override
@@ -106,7 +137,14 @@ public class ScriptJob
      */
     public void cancelRun()
     {
-        QuartzBridge.unscheduleJob(scheduler, this.triggerName, this.triggerGroup);
+        try
+        {
+            scheduler.unscheduleJob(TriggerKey.triggerKey(this.triggerName, this.triggerGroup));
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Unable to cancel the job " + this, e);
+        }
     }
 
     /**
@@ -114,7 +152,14 @@ public class ScriptJob
      */
     public void pauseJob()
     {
-        QuartzBridge.pauseJob(scheduler, this.jobName, this.groupName);
+        try
+        {
+            scheduler.pauseJob(JobKey.jobKey(this.jobName, this.groupName));
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Unable to pause the job " + this, e);
+        }
     }
 
     /**
@@ -122,7 +167,14 @@ public class ScriptJob
      */
     public void resumeJob()
     {
-        QuartzBridge.resumeJob(scheduler, this.jobName, this.groupName);
+        try
+        {
+            scheduler.resumeJob(JobKey.jobKey(this.jobName, this.groupName));
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Unable to resume the job " + this, e);
+        }
     }
 
     /**
@@ -130,7 +182,15 @@ public class ScriptJob
      */
     public void deleteJob()
     {
-        QuartzBridge.deleteJob(scheduler, this.jobName, this.groupName);
+        try
+        {
+            scheduler.deleteJob(JobKey.jobKey(this.jobName, this.groupName));
+        }
+        catch (SchedulerException e)
+        {
+            throw new AlfrescoRuntimeException("Cannot delete the job with name " + jobName + " and group " + groupName,
+                                               e);
+        }
     }
 
     public void setCronExpression(String cronExpression)
